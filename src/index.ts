@@ -7,6 +7,7 @@ import {
   type Company,
 } from "./algolia.ts";
 import { scrapeFounders } from "./scraper.ts";
+import { docsHtml } from "./docs.ts";
 
 const app = new Hono();
 
@@ -39,19 +40,26 @@ function cleanCompany(c: Company) {
   };
 }
 
-// Health check
-app.get("/", (c) =>
-  c.json({
+// API info
+app.get("/", (c) => {
+  const base = new URL(c.req.url).origin;
+  return c.json({
     name: "yc-api",
     version: "1.0.0",
-    docs: "https://github.com/arjanssuri/accelerator-api",
+    docs: `${base}/docs`,
     endpoints: {
       "GET /companies": "Search & filter YC companies",
       "GET /companies/:slug":
         "Get a specific company by slug (includes founders)",
     },
-  })
-);
+  });
+});
+
+// Interactive docs
+app.get("/docs", (c) => {
+  const base = new URL(c.req.url).origin;
+  return c.html(docsHtml(base));
+});
 
 // Search / list companies
 app.get("/companies", async (c) => {
