@@ -13,6 +13,13 @@ const app = new Hono();
 
 app.use("*", cors());
 
+function getBaseUrl(c: { req: { header: (name: string) => string | undefined; url: string } }) {
+  const proto = c.req.header("x-forwarded-proto") ?? "http";
+  const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
+  if (host) return `${proto}://${host}`;
+  return new URL(c.req.url).origin;
+}
+
 function cleanCompany(c: Company) {
   return {
     id: c.id,
@@ -42,7 +49,7 @@ function cleanCompany(c: Company) {
 
 // API info
 app.get("/", (c) => {
-  const base = new URL(c.req.url).origin;
+  const base = getBaseUrl(c);
   return c.json({
     name: "yc-api",
     version: "1.0.0",
@@ -57,7 +64,7 @@ app.get("/", (c) => {
 
 // Interactive docs
 app.get("/docs", (c) => {
-  const base = new URL(c.req.url).origin;
+  const base = getBaseUrl(c);
   return c.html(docsHtml(base));
 });
 
