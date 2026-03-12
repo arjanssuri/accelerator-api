@@ -1,20 +1,54 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { searchCompanies, getCompanyBySlug, type SortBy } from "./algolia.ts";
+import {
+  searchCompanies,
+  getCompanyBySlug,
+  type SortBy,
+  type Company,
+} from "./algolia.ts";
 import { scrapeFounders } from "./scraper.ts";
 
 const app = new Hono();
 
 app.use("*", cors());
 
+function cleanCompany(c: Company) {
+  return {
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    url: `https://www.ycombinator.com/companies/${c.slug}`,
+    former_names: c.former_names,
+    logo: c.small_logo_thumb_url,
+    website: c.website,
+    location: c.all_locations,
+    one_liner: c.one_liner,
+    long_description: c.long_description,
+    batch: c.batch,
+    status: c.status,
+    stage: c.stage,
+    industry: c.industry,
+    industries: c.industries,
+    tags: c.tags,
+    team_size: c.team_size,
+    regions: c.regions,
+    is_hiring: c.isHiring,
+    top_company: c.top_company,
+    nonprofit: c.nonprofit,
+    launched_at: c.launched_at,
+  };
+}
+
 // Health check
 app.get("/", (c) =>
   c.json({
     name: "yc-api",
     version: "1.0.0",
+    docs: "https://github.com/arjanssuri/accelerator-api",
     endpoints: {
       "GET /companies": "Search & filter YC companies",
-      "GET /companies/:slug": "Get a specific company by slug",
+      "GET /companies/:slug":
+        "Get a specific company by slug (includes founders)",
     },
   })
 );
@@ -55,7 +89,7 @@ app.get("/companies", async (c) => {
   });
 
   return c.json({
-    companies: result.hits,
+    companies: result.hits.map(cleanCompany),
     totalCount: result.nbHits,
     page: result.page,
     totalPages: result.nbPages,
@@ -76,7 +110,7 @@ app.get("/companies/:slug", async (c) => {
     return c.json({ error: "Company not found" }, 404);
   }
 
-  return c.json({ company: { ...company, founders } });
+  return c.json({ company: { ...cleanCompany(company), founders } });
 });
 
 export default {
