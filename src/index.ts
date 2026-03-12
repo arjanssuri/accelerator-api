@@ -13,10 +13,13 @@ const app = new Hono();
 
 app.use("*", cors());
 
+const PUBLIC_URL = process.env.PUBLIC_URL ?? "";
+
 function getBaseUrl(c: { req: { header: (name: string) => string | undefined; url: string } }) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const proto = c.req.header("x-forwarded-proto") ?? "https";
   const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
-  const proto = c.req.header("x-forwarded-proto") ?? (host ? "https" : "http");
-  if (host) return `${proto}://${host}`;
+  if (host) return `${proto}://${host.split(":")[0]}`;
   return new URL(c.req.url).origin;
 }
 
@@ -52,7 +55,7 @@ app.get("/", (c) => {
   const base = getBaseUrl(c);
   return c.json({
     name: "yc-api",
-    version: "1.0.0",
+    version: "1.0.3",
     docs: `${base}/docs`,
     endpoints: {
       "GET /companies": "Search & filter YC companies",
