@@ -14,8 +14,8 @@ const app = new Hono();
 app.use("*", cors());
 
 function getBaseUrl(c: { req: { header: (name: string) => string | undefined; url: string } }) {
-  const proto = c.req.header("x-forwarded-proto") ?? "http";
   const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
+  const proto = c.req.header("x-forwarded-proto") ?? (host ? "https" : "http");
   if (host) return `${proto}://${host}`;
   return new URL(c.req.url).origin;
 }
